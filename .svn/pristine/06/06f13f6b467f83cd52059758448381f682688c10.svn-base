@@ -1,0 +1,74 @@
+package com.linqh.mobilesafe.activities;
+
+import com.linqh.mobilesafe.R;
+import com.linqh.mobilesafe.service.CallSmsService;
+import com.linqh.mobilesafe.ui.SettingCheckView;
+import com.linqh.mobilesafe.utils.ServiceStatusUtils;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+
+public class SettingActivity extends Activity {
+	private SettingCheckView scv_setting_update;
+	private SettingCheckView scv_setting_blacknumber;
+	private SharedPreferences sp;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_setting);
+		scv_setting_update=(SettingCheckView) findViewById(R.id.scv_setting_update);
+		sp=getSharedPreferences("config",MODE_PRIVATE);
+		//设置手机是否开启自动更新
+		boolean update=sp.getBoolean("update",false);
+		scv_setting_update.setChecked(update);
+		scv_setting_update.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Editor et=sp.edit();
+				if(scv_setting_update.isChecked()){
+					scv_setting_update.setChecked(false);
+					et.putBoolean("update",false);
+				}else {
+					scv_setting_update.setChecked(true);
+					et.putBoolean("update",true);
+				}
+				et.commit();
+			}
+		});
+		//设置手机是否开启黑名单
+		scv_setting_blacknumber=(SettingCheckView) findViewById(R.id.scv_setting_blacknumber);
+		
+		scv_setting_blacknumber.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if(scv_setting_blacknumber.isChecked()){
+					Intent service=new Intent(SettingActivity.this,CallSmsService.class);
+					stopService(service);
+					scv_setting_blacknumber.setChecked(false);
+				}else {
+					Intent service=new Intent(SettingActivity.this,CallSmsService.class);
+					startService(service);
+					scv_setting_blacknumber.setChecked(true);
+				}
+			}
+		});
+	}
+
+	@Override
+	protected void onStart() {
+		// TODO Auto-generated method stub
+		super.onStart();
+		if(ServiceStatusUtils.isServiceRunning(this,"com.linqh.mobilesafe.service.CallSmsService" )){
+			scv_setting_blacknumber.setChecked(true);
+		}else {
+			scv_setting_blacknumber.setChecked(false);
+		}
+	}
+}

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="com.linqh.mobilesafe.ui.SettingCheckView">
+        <attr name="bigTitle" format="string" />
+         <attr name="TextSize" format="dimension"/>
+    </declare-styleable>
+
+</resources>

@@ -1,0 +1,143 @@
+package com.linqh.mobilesafe.service;
+
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URL;
+import java.util.Observable;
+import java.util.Observer;
+
+import com.android.internal.telephony.ITelephony;
+import com.lidroid.xutils.DbUtils.DaoConfig;
+import com.linqh.mobilesafe.db.dao.BlackNumberDao;
+
+import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.database.ContentObserver;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.IBinder;
+import android.telephony.PhoneStateListener;
+import android.telephony.SmsMessage;
+import android.telephony.TelephonyManager;
+
+public class CallSmsService extends Service {
+	private BlackNumberDao dao;
+	private BlackNumberReceiver receiver;
+	private TelephonyManager tm;
+	private MyPhoneListener listener;
+	@Override
+	public IBinder onBind(Intent intent) {
+		return null;
+	}
+	@Override
+	public void onCreate() {
+		dao=new BlackNumberDao(this);
+		//得到电话管理器
+		tm=(TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+		//注册电话呼叫状态监听
+		listener=new MyPhoneListener();
+		tm.listen(listener, PhoneStateListener.LISTEN_CALL_STATE);
+		//短信
+		receiver=new BlackNumberReceiver();
+		IntentFilter filter=new IntentFilter();
+		filter.addAction("android.provider.Telephony.SMS_RECEIVED");
+		filter.setPriority(Integer.MAX_VALUE);
+		registerReceiver(receiver, filter);
+		super.onCreate();
+	}
+
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		System.out.println("开启服务");
+		return super.onStartCommand(intent, flags, startId);
+		
+	}
+
+	@Override
+	public void onDestroy() {
+		unregisterReceiver(receiver);
+		receiver=null;
+		tm.listen(listener, PhoneStateListener.LISTEN_NONE);
+		listener=null;
+		System.out.println("关闭服务");
+		super.onDestroy();
+	}
+	
+	public class BlackNumberReceiver extends BroadcastReceiver{
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			Object[] objects=(Object[]) intent.getExtras().get("pdus");
+			for(Object obj:objects){
+				SmsMessage msg=SmsMessage.createFromPdu((byte[]) obj);
+				String phone=msg.getOriginatingAddress().toString();
+				String mode=dao.find(phone);
+				if(mode.equals("2")||mode.equals("3")){
+					System.out.println("拦截功能已开启，功能生效...");
+					abortBroadcast();
+				}
+			}
+		}
+		//拦截黑名单电话
+	}
+	
+	private class MyPhoneListener extends PhoneStateListener{
+		@Override
+		public void onCallStateChanged(int state, final String incomingNumber) {
+			switch (state) {
+			case TelephonyManager.CALL_STATE_IDLE://空闲
+				break;
+			case TelephonyManager.CALL_STATE_RINGING://响铃
+				System.out.println("----------------挂断电话");
+				String result=dao.find(incomingNumber);
+				if(result.equals("1")||result.equals("3")){
+					System.out.println("----------------挂断电话");
+					endCall();
+					//判断记录是否生成
+					Uri uri=Uri.parse("content://call_log/calls");
+					getContentResolver().registerContentObserver(uri, true, new ContentObserver(new Handler()) {
+						@Override
+						public void onChange(boolean selfChange) {
+							deleteHistory(incomingNumber);
+							super.onChange(selfChange);
+						}
+					});
+				}				
+				break;
+			case TelephonyManager.CALL_STATE_OFFHOOK://接通电话
+				
+				break;
+			}
+			super.onCallStateChanged(state, incomingNumber);
+		}
+	}
+	/**
+	 * 删除历史记录
+	 */
+	private void deleteHistory(String incomingNumber) {
+		ContentResolver resolver=getContentResolver();
+		Uri uri=Uri.parse("content://call_log/calls");
+		resolver.delete(uri, "number=?", new String[]{incomingNumber});
+	}
+	/**
+	 * 挂断电话
+	 */
+	private void endCall() {
+		try {
+			//使用类加载器加载类
+			Class clazz=CallSmsService.class.getClassLoader().loadClass("android.os.ServiceManager");
+			//静态方法使用DeclaredMethod
+			Method method=clazz.getDeclaredMethod("getService",String.class);
+			IBinder iBinder=(IBinder) method.invoke(null, TELEPHONY_SERVICE);
+			ITelephony iTelephony=ITelephony.Stub.asInterface(iBinder);
+			iTelephony.endCall();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+}

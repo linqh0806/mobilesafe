@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" 
+    android:descendantFocusability="blocksDescendants">
+
+    <ImageView
+        android:id="@+id/iv_icon"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="20dp"
+        android:src="@drawable/ic_launcher" />
+
+    <View
+        style="@style/view_line_style"
+        android:layout_below="@id/iv_icon" />
+
+    <TextView
+        android:id="@+id/tv_appname"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toRightOf="@id/iv_icon"
+        android:text="安全卫士"
+        android:textColor="#000000"
+        android:textSize="20dp" />
+
+    <TextView
+        android:id="@+id/tv_store"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tv_appname"
+        android:layout_marginTop="40dp"
+        android:layout_toRightOf="@+id/iv_icon"
+        android:text="手机内存"
+        android:textColor="#AA000000"
+        android:textSize="15dp" />
+
+    <Button
+        android:id="@+id/bt_uninstall"
+        android:background="@drawable/btn_default"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="20dp"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:textColor="#000000"
+        android:text="卸载" 
+        android:onClick="uninstall"/>
+
+    <TextView
+        android:id="@+id/tv_size"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tv_appname"
+        android:layout_marginTop="40dp"
+        android:layout_toLeftOf="@+id/bt_uninstall"
+        android:text="123.13kb"
+        android:textColor="#AA000000"
+        android:textSize="15dp" /> 
+
+</RelativeLayout>
